@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Place Order - Local Market</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#3c17f3" />
+  <link rel="apple-touch-icon" href="images/geometry-box.png" />
+  <style>
+    .payment-container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: var(--nav-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    
+    .payment-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .payment-header h2 {
+      color: var(--text-color);
+      margin-bottom: 0.5rem;
+    }
+    
+    .payment-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    
+    .order-summary {
+      background: var(--bg-color);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      height: fit-content;
+    }
+    
+    .order-summary h3 {
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #3c17f3;
+      padding-bottom: 0.5rem;
+    }
+    
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .order-item:last-child {
+      border-bottom: none;
+    }
+    
+    .payment-methods {
+      background: var(--bg-color);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .payment-methods h3 {
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #3c17f3;
+      padding-bottom: 0.5rem;
+    }
+    
+    .payment-option {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .payment-option:hover {
+      border-color: #3c17f3;
+      background: #f8f9ff;
+    }
+    
+    .payment-option.selected {
+      border-color: #3c17f3;
+      background: #f0f4ff;
+    }
+    
+    .payment-option input[type="radio"] {
+      margin-right: 0.5rem;
+    }
+    
+    .payment-form {
+      margin-top: 1rem;
+      display: none;
+    }
+    
+    .payment-form.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    
+    .pay-button {
+      width: 100%;
+      padding: 1rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 1rem;
+    }
+    
+    .pay-button:hover {
+      background: #218838;
+    }
+    
+    .pay-button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    .total-section {
+      border-top: 2px solid #e0e0e0;
+      padding-top: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    
+    .total-row.final {
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #3c17f3;
+    }
+    
+    .success-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .success-content {
+      background: var(--bg-color);
+      padding: 2rem;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    
+    .success-icon {
+      font-size: 4rem;
+      color: #28a745;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .payment-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo"><span class="logo-icon"> 
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61l1.38-7.39H6"/></svg>
+    </span><span class="logo-text">localmarket</span></div>
+    <ul style="display: flex; gap: 20px; list-style: none; padding: 10px; background: #f5f5f5;">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="categories.html">Categories</a></li>
+      <li><a href="add-to-cart.html">Cart <span id="cart-counter" class="cart-counter">0</span></a></li>
+      <li><a href="order-history.html">Order History</a></li>
+    </ul>
+    <button id="modeToggle">🌙</button>
+  </nav>
+
+  <div class="payment-container">
+    <div class="payment-header">
+      <h2>Place Your Order</h2>
+      <p>Review your order and confirm with Cash on Delivery</p>
+    </div>
+    
+    <div class="payment-content">
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <div id="order-items"></div>
+        <div class="total-section">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span id="subtotal">₹0</span>
+          </div>
+          <div class="total-row">
+            <span>Delivery Fee:</span>
+            <span id="delivery-fee">₹20</span>
+          </div>
+          <div class="total-row final">
+            <span>Total:</span>
+            <span id="total">₹0</span>
+          </div>
+        </div>
+        
+        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--text-color);">Delivery Details</h4>
+          <div id="delivery-details"></div>
+        </div>
+      </div>
+      
+      <!-- Payment Methods -->
+      <div class="payment-methods">
+        <h3>Order Confirmation</h3>
+        
+        <div class="payment-option selected" data-method="cod">
+          <input type="radio" name="payment" id="cod" value="cod" checked>
+          <label for="cod">Cash on Delivery</label>
+        </div>
+        
+        <div class="payment-form active" id="cod-form">
+          <p style="color: #666; font-style: italic; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-top: 1rem;">
+            <strong>Cash on Delivery:</strong> Pay with cash when your order is delivered. 
+            No advance payment required. Your order will be confirmed immediately.
+          </p>
+        </div>
+        
+        <button class="pay-button" id="pay-button">Place Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="success-modal" id="success-modal">
+    <div class="success-content">
+      <div class="success-icon">✅</div>
+      <h3>Order Placed Successfully!</h3>
+      <p>Your order has been confirmed. You will receive a confirmation call shortly. Pay with cash when your order is delivered.</p>
+      <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+        <strong>Order ID:</strong> <span id="order-id"></span>
+      </div>
+      <button onclick="window.location.href='index.html'" style="padding: 0.8rem 1.5rem; background: #3c17f3; color: white; border: none; border-radius: 8px; cursor: pointer;">Continue Shopping</button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-about">
+        <h3>local market</h3>
+        <p>Groceries Home delivered. Your one-stop shop for fresh produce, snacks, and daily essentials.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="categories.html">Categories</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h4>Contact</h4>
+        <p>Email:localmarket17@gmail.com</p>
+        <p>Phone: 9966284758 / 8340825823</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    // Load order data
+    const orderData = JSON.parse(localStorage.getItem('currentOrder') || '{}');
+    
+    if (!orderData.items || orderData.items.length === 0) {
+      alert('No order found. Please add items to cart first.');
+      window.location.href = 'add-to-cart.html';
+    }
+    
+    // Render order summary
+    function renderOrderSummary() {
+      const orderItemsDiv = document.getElementById('order-items');
+      const deliveryDetailsDiv = document.getElementById('delivery-details');
+      
+      let subtotal = 0;
+      orderData.items.forEach(item => {
+        subtotal += item.price * item.quantity;
+        orderItemsDiv.innerHTML += `
+          <div class="order-item">
+            <span>${item.name} (${item.quantity}x)</span>
+            <span>₹${item.price * item.quantity}</span>
+          </div>
+        `;
+      });
+      
+      const deliveryFee = 20;
+      const tax = 0;
+      const total = subtotal + deliveryFee + tax;
+      
+      document.getElementById('subtotal').textContent = `₹${subtotal}`;
+      document.getElementById('delivery-fee').textContent = `₹${deliveryFee}`;
+      document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
+      
+      // Render delivery details
+      if (orderData.customerInfo) {
+        deliveryDetailsDiv.innerHTML = `
+          <p><strong>Name:</strong> ${orderData.customerInfo.name}</p>
+          <p><strong>Phone:</strong> ${orderData.customerInfo.phone}</p>
+          <p><strong>Address:</strong> ${orderData.customerInfo.address}</p>
+        `;
+      }
+    }
+    
+    renderOrderSummary();
+    
+    // Pay button functionality
+    document.getElementById('pay-button').addEventListener('click', function() {
+      // Simulate order processing
+      this.textContent = 'Processing...';
+      this.disabled = true;
+      
+      setTimeout(() => {
+        // Generate order ID
+        const orderId = 'ORD' + Date.now();
+        
+        // Store order in localStorage
+        const completedOrder = {
+          ...orderData,
+          orderId: orderId,
+          paymentMethod: 'cod',
+          status: 'pending',
+          paymentDate: new Date().toISOString()
+        };
+        
+        // Get existing orders or create new array
+        const existingOrders = JSON.parse(localStorage.getItem('orderHistory') || '[]');
+        existingOrders.push(completedOrder);
+        localStorage.setItem('orderHistory', JSON.stringify(existingOrders));
+        
+        // Clear cart
+        localStorage.removeItem('cart');
+        localStorage.removeItem('currentOrder');
+        
+        // Update cart counter to 0
+        updateCartCounter();
+        
+        // Show success modal
+        document.getElementById('order-id').textContent = orderId;
+        document.getElementById('success-modal').style.display = 'flex';
+      }, 2000);
+    });
+    
+    // Close success modal when clicking outside
+    document.getElementById('success-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html> 

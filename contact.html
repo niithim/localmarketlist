@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact - Local Market</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#3c17f3" />
+  <link rel="apple-touch-icon" href="images/geometry-box.png" />
+</head>
+<body>
+  <nav>
+    <div class="logo">
+      <span class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"/>
+          <circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61l1.38-7.39H6"/>
+        </svg>
+      </span>
+      <span class="logo-text">localmarket</span>
+    </div>
+    <ul id="navbarLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="categories.html">Categories</a></li>
+      <li><a href="add-to-cart.html">my Cart <span id="cart-counter" class="cart-counter">0</span></a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="order-history.html">Order History</a></li>
+    </ul>
+    <button id="modeToggle">🌙</button>
+    <button id="menuToggle" class="menu-toggle" aria-label="Open navigation">&#9776;</button>
+  </nav>
+
+  <section id="contact" style="max-width: 500px; margin: 3rem auto; background: var(--nav-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+    <h2 style="text-align:center; margin-bottom:1.5rem;">Contact Us</h2>
+    <div id="order-summary" style="margin-bottom:2rem;"></div>
+
+    <form id="contactForm" action="https://formsubmit.co/tanguturinithinkumar@gmail.com" method="POST">
+      <input type="hidden" name="_next" value="thankyou.html">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="order_summary" id="order_summary_input">
+
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" required style="width:100%; padding:0.6rem; margin-bottom:1rem; border:1px solid #ccc; border-radius:6px;">
+
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone" required style="width:100%; padding:0.6rem; margin-bottom:1rem; border:1px solid #ccc; border-radius:6px;">
+      
+      <label for="address">address</label>
+      <textarea id="address" name="address" rows="5" required style="width:100%; padding:0.6rem; margin-bottom:1rem; border:1px solid #ccc; border-radius:6px;"></textarea>
+
+      <!-- <button type="submit" style="width:100%; padding:0.75rem; background-color:#3c17f3; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">Send</button> -->
+      <!-- <button type="submit" style="width:100%; padding:0.75rem; background-color:#3c17f3; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">Procced to order conformation (COD)</button> -->
+    </form>
+  </section>
+
+  <script src="script.js"></script>
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const cartData = getQueryParam('cart');
+    let summaryHtml = '';
+    let orderSummaryText = '';
+
+    // Build summary from localStorage cart if available; fallback to URL cart
+    try {
+      let items = JSON.parse(localStorage.getItem('cart') || '[]');
+      if ((!items || items.length === 0) && cartData) {
+        items = JSON.parse(decodeURIComponent(cartData));
+      }
+      if (items && items.length) {
+        summaryHtml += '<h3>Your Order</h3><ul style="padding-left:1.2em;">';
+        orderSummaryText += 'Order Details:\n';
+        let total = 0;
+        items.forEach(item => {
+          const line = item.price * item.quantity;
+          total += line;
+          summaryHtml += `<li>${item.name} x ${item.quantity} - ₹${line}</li>`;
+          orderSummaryText += `${item.name} x ${item.quantity} - ₹${line}\n`;
+        });
+        summaryHtml += `</ul><div style=\"font-weight:bold;\">Total: ₹${total}</div>`;
+        orderSummaryText += `Total: ₹${total}`;
+      } else {
+        summaryHtml = '<em>No order data found.</em>';
+      }
+    } catch (err) {
+      summaryHtml = '<em>Error loading order.</em>';
+    }
+
+    document.getElementById('order-summary').innerHTML = summaryHtml;
+    document.getElementById('order_summary_input').value = orderSummaryText;
+
+    // Helper: send email via FormSubmit AJAX using the email in form action
+    async function sendEmailViaFormSubmit(name, phone, address, orderSummary) {
+      try {
+        const formEl = document.getElementById('contactForm');
+        const action = formEl.getAttribute('action') || '';
+        const match = action.match(/formsubmit\.co\/([^/?#]+)/i);
+        if (!match) return; // no action/email configured
+        const targetEmail = decodeURIComponent(match[1]);
+        const endpoint = `https://formsubmit.co/ajax/${targetEmail}`;
+        const payload = {
+          name,
+          phone,
+          address,
+          order_summary: orderSummary,
+          _captcha: 'false'
+        };
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // Ignore failures; still proceed to order confirmation
+      }
+    }
+
+    // Common proceed function
+    async function proceedToOrder() {
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const address = document.getElementById('address').value.trim();
+      if (!name || !phone || !address) {
+        alert('Please fill your Name, Phone, and Address before proceeding.');
+        return false;
+      }
+
+      // Prefer cart from localStorage; fallback to query param
+      let items = [];
+      try {
+        const cartLs = JSON.parse(localStorage.getItem('cart') || '[]');
+        if (cartLs && cartLs.length) {
+          items = cartLs;
+        } else if (cartData) {
+          items = JSON.parse(decodeURIComponent(cartData));
+        }
+      } catch (e) {}
+
+      if (!items.length) {
+        alert('No items found in cart. Please add items first.');
+        window.location.href = 'add-to-cart.html';
+        return false;
+      }
+
+      // Build latest order summary text for email
+      let emailSummary = 'Order Details:\n';
+      let sum = 0;
+      items.forEach(it => { const line = it.price * it.quantity; sum += line; emailSummary += `${it.name} x ${it.quantity} - ₹${line}\n`; });
+      emailSummary += `Total: ₹${sum}`;
+
+      // Fire-and-forget email via AJAX (wait shortly, but don't block UX)
+      await sendEmailViaFormSubmit(name, phone, address, emailSummary);
+
+      const currentOrder = {
+        items,
+        customerInfo: { name, phone, address }
+      };
+      localStorage.setItem('currentOrder', JSON.stringify(currentOrder));
+      window.location.href = 'payment.html';
+      return true;
+    }
+
+    // Add a button to proceed to order confirmation (COD)
+    const formEl = document.getElementById('contactForm');
+    const proceedBtn = document.createElement('button');
+    proceedBtn.type = 'button';
+    proceedBtn.textContent = 'Proceed to Order Confirmation (COD)';
+    proceedBtn.style.cssText = 'width:100%; margin-top:0.75rem; padding:0.75rem; background:#28a745; color:#fff; font-weight:bold; border:none; border-radius:6px; cursor:pointer;';
+    formEl.parentNode.insertBefore(proceedBtn, formEl.nextSibling);
+
+    proceedBtn.addEventListener('click', function() { proceedToOrder(); });
+
+    // On normal form submit, refresh hidden input from latest localStorage cart and allow email to send
+    formEl.addEventListener('submit', function() {
+      try {
+        const items = JSON.parse(localStorage.getItem('cart') || '[]');
+        if (items && items.length) {
+          let text = 'Order Details:\n';
+          let total = 0;
+          items.forEach(item => {
+            const line = item.price * item.quantity;
+            total += line;
+            text += `${item.name} x ${item.quantity} - ₹${line}\n`;
+          });
+          text += `Total: ₹${total}`;
+          document.getElementById('order_summary_input').value = text;
+        }
+      } catch (err) {}
+    });
+  </script>
+  <script>
+    document.getElementById('menuToggle').addEventListener('click', function(event) {
+      document.getElementById('navbarLinks').classList.toggle('active');
+      event.stopPropagation(); // Prevent this click from bubbling up
+    });
+
+    // Close navbar when clicking outside
+    document.addEventListener('click', function(event) {
+      var navbarLinks = document.getElementById('navbarLinks');
+      var menuToggle = document.getElementById('menuToggle');
+      if (
+        navbarLinks.classList.contains('active') &&
+        !navbarLinks.contains(event.target) &&
+        !menuToggle.contains(event.target)
+      ) {
+        navbarLinks.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

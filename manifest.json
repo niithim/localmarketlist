@@ -1,0 +1,14 @@
+{
+  "name": "Local Market",
+  "short_name": "LocalMarket",
+  "start_url": "/localmarket-main/index.html",
+  "scope": "/localmarket-main/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3c17f3",
+  "icons": [
+    { "src": "images/herosection.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "images/geometry-box.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}
+
